@@ -1,5 +1,5 @@
 'use strict';
 
 module.exports = {
-  name: 'ember-rdfa-editor-scoped-bestuursorgaan'
+  name: require('./package').name
 };
