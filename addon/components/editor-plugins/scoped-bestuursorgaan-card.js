@@ -52,15 +52,13 @@ export default Component.extend(InsertResourceRelationCardMixin, {
       let bestuursorgaanJsonApi = this.serializeToJsonApi(data.bestuursorgaan);
       let rdfaRefer = await this.getReferRdfa(data.property, bestuursorgaanJsonApi, data.bestuursorgaan.naam);
       this.editor.replaceNodeWithHTML(this.info.domNodeToUpdate , rdfaRefer, true);
-      let mappedLocation = this.get('hintsRegistry').updateLocationToCurrentIndex(this.get('hrId'), this.get('location'));
-      this.get('hintsRegistry').removeHintsAtLocation(mappedLocation, this.get('hrId'), 'editor-plugins/scoped-bestuursorgaan-card');
+      this.get('hintsRegistry').removeHintsAtLocation(this.location, this.get('hrId'), 'editor-plugins/scoped-bestuursorgaan-card');
     },
     async extend(data){
       let bestuursorgaanJsonApi = this.serializeToJsonApi(data.bestuursorgaan);
       let rdfaExtended = await this.getExtendedRdfa(data.property, bestuursorgaanJsonApi);
       this.editor.replaceNodeWithHTML(this.info.domNodeToUpdate , rdfaExtended, true);
-      let mappedLocation = this.get('hintsRegistry').updateLocationToCurrentIndex(this.get('hrId'), this.get('location'));
-      this.get('hintsRegistry').removeHintsAtLocation(mappedLocation, this.get('hrId'), 'editor-plugins/scoped-bestuursorgaan-card');
+      this.get('hintsRegistry').removeHintsAtLocation(this.location, this.get('hrId'), 'editor-plugins/scoped-bestuursorgaan-card');
     }
   }
 });
