@@ -1,8 +1,6 @@
-import { getOwner } from '@ember/application';
 import Service from '@ember/service';
-import EmberObject, { computed } from '@ember/object';
-import { task, timeout } from 'ember-concurrency';
-import { inject as service } from '@ember/service';
+import EmberObject from '@ember/object';
+import { task } from 'ember-concurrency';
 import { isArray } from '@ember/array';
 import { warn } from '@ember/debug';
 
@@ -28,7 +26,7 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
    *
    * @public
    */
-  execute: task(function * (hrId, contexts, hintsRegistry, editor, extraInfo = []) {
+  execute: task(function * (hrId, contexts, hintsRegistry, editor) {
     if (contexts.length === 0) return [];
 
     const hints = [];
