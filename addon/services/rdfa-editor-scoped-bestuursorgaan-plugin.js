@@ -1,7 +1,10 @@
 import { getOwner } from '@ember/application';
 import Service from '@ember/service';
 import EmberObject, { computed } from '@ember/object';
-import { task } from 'ember-concurrency';
+import { task, timeout } from 'ember-concurrency';
+import { inject as service } from '@ember/service';
+import { isArray } from '@ember/array';
+import { warn } from '@ember/debug';
 
 /**
  * Service responsible for correct annotation of dates
@@ -12,11 +15,6 @@ import { task } from 'ember-concurrency';
  * @extends EmberService
  */
 const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
-
-  init(){
-    this._super(...arguments);
-    const config = getOwner(this).resolveRegistration('config:environment');
-  },
 
   /**
    * Restartable task to handle the incoming events from the editor dispatcher
@@ -30,15 +28,23 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
    *
    * @public
    */
-  execute: task(function * (hrId, contexts, hintsRegistry, editor) {
+  execute: task(function * (hrId, contexts, hintsRegistry, editor, extraInfo = []) {
     if (contexts.length === 0) return [];
 
     const hints = [];
     contexts.forEach((context) => {
-      let relevantContext = this.detectRelevantContext(context)
+      let relevantContext = this.detectRelevantContext(context);
       if (relevantContext) {
+        let richNodes = isArray(context.richNode) ? context.richNode : [ context.richNode ];
+        let domNode = richNodes
+              .map(r => this.getDomElementForRdfaInstructiveContext(editor.rootNode, r.domNode, relevantContext.predicate))
+              .find(d => d);
+        if(!domNode){
+          warn(`Trying to work on unattached domNode. Sorry can't handle these...`, {id: 'scoped-bestuursorgaan.domNode'});
+          return;
+        }
         hintsRegistry.removeHintsInRegion(context.region, hrId, this.get('who'));
-        hints.pushObjects(this.generateHintsForContext(context));
+        hints.pushObjects(this.generateHintsForContext(context, relevantContext, domNode));
       }
     });
     const cards = hints.map( (hint) => this.generateCard(hrId, hintsRegistry, editor, hint));
@@ -59,25 +65,24 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
    * @private
    */
   detectRelevantContext(context){
-    return context.text.toLowerCase().indexOf('hello') >= 0;
+    if(context.context.slice(-1)[0].predicate == "http://mu.semte.ch/vocabularies/ext/scopedBestuursorgaanText"){
+      return context.context.slice(-1)[0];
+    }
+    return null;
   },
 
-
-
   /**
-   * Maps location of substring back within reference location
-   *
-   * @method normalizeLocation
-   *
-   * @param {[int,int]} [start, end] Location withing string
-   * @param {[int,int]} [start, end] reference location
-   *
-   * @return {[int,int]} [start, end] absolute location
-   *
+   * Find the first resource type the rdfa instructive belongs to.
+   * e.g.: in example below will return besluit:Zitting
+   * <div typeof="besluit:Zitting" resource="http://uri">
+   *   <h2 property="dc:title">
+   *     <span property="ext:scopedBestuursorgaanText">selecteer bestuursorgaan</span>
+   *   </h2>
+   * </div>
    * @private
    */
-  normalizeLocation(location, reference){
-    return [location[0] + reference[0], location[1] + reference[0]];
+  findTypeForInstructive(context, instructiveTriple){
+    return (context.context.find(t => t.subject == instructiveTriple.subject && t.predicate == 'a') || {}).object;
   },
 
   /**
@@ -97,10 +102,12 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
   generateCard(hrId, hintsRegistry, editor, hint){
     return EmberObject.create({
       info: {
-        label: this.get('who'),
+        label: 'Voeg het relevante bestuursorgaan toe.',
         plainValue: hint.text,
-        htmlString: '<b>hello world</b>',
         location: hint.location,
+        domainUri: hint.domainUri,
+        domNodeToUpdate: hint.domNode,
+        instructiveUri: hint.instructiveUri,
         hrId, hintsRegistry, editor
       },
       location: hint.location,
@@ -119,14 +126,32 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
    *
    * @private
    */
-  generateHintsForContext(context){
+  generateHintsForContext(context, instructiveTriple, domNode){
+    const domainUri = this.findTypeForInstructive(context, instructiveTriple);
     const hints = [];
-    const index = context.text.toLowerCase().indexOf('hello');
-    const text = context.text.slice(index, index+5);
-    const location = this.normalizeLocation([index, index + 5], context.region);
-    hints.push({text, location});
+    const text = context.text;
+    const location = context.region;
+    hints.push({text, location, domainUri, domNode, instructiveUri: instructiveTriple.predicate});
     return hints;
+  },
+
+  /**
+   * Find matching domNode for RDFA instructive.
+   * We don't exactly know where it is located, hence some walking back.
+   */
+  getDomElementForRdfaInstructiveContext(rootNode, domNode, instructiveRdfa){
+    let ext = 'http://mu.semte.ch/vocabularies/ext/';
+    if(!domNode || rootNode.isEqualNode(domNode)) return null;
+    if(!domNode.attributes || !domNode.attributes.property){
+      return this.getDomElementForRdfaInstructiveContext(rootNode, domNode.parentElement, instructiveRdfa);
+    }
+
+    let expandedProperty = domNode.attributes.property.value.replace('ext:', ext);
+    if(instructiveRdfa == expandedProperty)
+      return domNode;
+    return this.getDomElementForRdfaInstructiveContext(rootNode, domNode.parentElement, instructiveRdfa);
   }
+
 });
 
 RdfaEditorScopedBestuursorgaanPlugin.reopen({

@@ -1,10 +1,15 @@
 <p class="u-spacer--tiny">{{info.label}} <br>
-  <strong>{{info.plainValue}}</strong>
+  {{#if getBestuursorganen.isRunning}}
+    <div class="loader"><span class="u-visually-hidden">Aan het laden</span></div>
+  {{else}}
+    {{#each bestuursorganenProperties as |bp| }}
+      {{bp.bestuursorgaan.naam}} als {{bp.property.label}}
+      {{#wu-button-group}}
+        {{wu-button label="Voeg toe" size="small" isNarrow=true  commandLocation="below" onClick=(action "refer" bp)}}
+        {{wu-button label="Voeg toe (uitgebreid)" size="small" isNarrow=true  commandLocation="below" onClick=(action "extend" bp)}}
+      {{/wu-button-group}}
+    {{/each}}
+  {{/if}}
 </p>
-
-{{#wu-button-group}}
-  {{wu-button label="Juist" size="small" isNarrow=true command="ctrl + j" commandLocation="below" onClick=(action "insert")}}
-  {{wu-button label="Negeer" size="tiny" isLink=true isDark=true isNarrow=true command="esc" commandLocation="below" onClick=null}}
-{{/wu-button-group}}
 
 {{yield}}

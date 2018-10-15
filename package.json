@@ -1,5 +1,5 @@
 {
-  "name": "@lblod/ember-rdfa-editor-scoped-bestuursorgaan",
+  "name": "@lblod/ember-rdfa-editor-scoped-bestuursorgaan-plugin",
   "version": "0.0.0",
   "description": "The default blueprint for ember-cli addons.",
   "keywords": [
