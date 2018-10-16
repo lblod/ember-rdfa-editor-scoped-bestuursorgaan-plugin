@@ -16,7 +16,7 @@ Usage
 ------------------------------------------------------------------------------
 Assumes user is logged in ACM/IDM with ember-acmidm-login service.
 
-For bestuursorgaan insert the instructive:
+For bestuursorgaan insert the instructive in editor-document:
 ```<span property="ext:scopedBestuursorgaanText">selecteer bestuursorgaan</span>```
 
 
