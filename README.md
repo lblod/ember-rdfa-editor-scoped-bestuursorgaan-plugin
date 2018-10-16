@@ -1,20 +1,23 @@
-ember-rdfa-editor-scoped-bestuursorgaan
+@lblod/ember-rdfa-editor-scoped-bestuursorgaan
 ==============================================================================
 
-[Short description of the addon.]
+Plugin responsible for inserting bestuursorgaan, bestuurseenheden linked to
+profile of user
 
 Installation
 ------------------------------------------------------------------------------
 
 ```
-ember install ember-rdfa-editor-scoped-bestuursorgaan
+ember install @lblod/ember-rdfa-editor-scoped-bestuursorgaan
 ```
 
 
 Usage
 ------------------------------------------------------------------------------
+Assumes user is logged in ACM/IDM with ember-acmidm-login service.
 
-[Longer description of how to use the addon in apps.]
+For bestuursorgaan insert the instructive:
+```<span property="ext:scopedBestuursorgaanText">selecteer bestuursorgaan</span>```
 
 
 Contributing
