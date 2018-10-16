@@ -1,4 +1,4 @@
-@lblod/ember-rdfa-editor-scoped-bestuursorgaan
+@lblod/ember-rdfa-editor-scoped-bestuursorgaan-plugin
 ==============================================================================
 
 Plugin responsible for inserting bestuursorgaan, bestuurseenheden linked to
@@ -8,7 +8,7 @@ Installation
 ------------------------------------------------------------------------------
 
 ```
-ember install @lblod/ember-rdfa-editor-scoped-bestuursorgaan
+ember install @lblod/ember-rdfa-editor-scoped-bestuursorgaan-plugin
 ```
 
 
