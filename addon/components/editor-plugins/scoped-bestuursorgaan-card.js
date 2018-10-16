@@ -1,7 +1,6 @@
 import Component from '@ember/component';
 import layout from '../../templates/components/editor-plugins/scoped-bestuursorgaan-card';
 import InsertResourceRelationCardMixin from '@lblod/ember-generic-model-plugin-utils/mixins/insert-resource-relation-card-mixin';
-import { findPropertiesWithRange } from '@lblod/ember-generic-model-plugin-utils/utils/meta-model-utils';
 import { inject as service } from '@ember/service';
 import { task } from 'ember-concurrency';
 
@@ -13,6 +12,7 @@ import { task } from 'ember-concurrency';
 * @extends Ember.Component
 */
 export default Component.extend(InsertResourceRelationCardMixin, {
+  metaModelQuery: service(),
   currentSession: service(),
   store: service(),
 
@@ -27,7 +27,7 @@ export default Component.extend(InsertResourceRelationCardMixin, {
 
   getBestuursorganen: task(function * (){
     let currentBestuurseenheid = yield this.currentSession.get('group');
-    let properties = yield findPropertiesWithRange(this.store, this.get('info.domainUri'), 'http://data.vlaanderen.be/ns/besluit#BestuursOrgaan');
+    let properties = yield this.metaModelQuery.findPropertiesWithRange(this.get('info.domainUri'), 'http://data.vlaanderen.be/ns/besluit#BestuursOrgaan');
     let query = {
       'filter[bestuurseenheid][id]': currentBestuurseenheid.id
     };
