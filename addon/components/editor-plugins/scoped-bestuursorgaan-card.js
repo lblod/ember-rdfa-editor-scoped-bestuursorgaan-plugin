@@ -28,19 +28,38 @@ export default Component.extend(InsertResourceRelationCardMixin, {
   getBestuursorganen: task(function * (){
     let currentBestuurseenheid = yield this.currentSession.get('group');
     let properties = yield this.metaModelQuery.findPropertiesWithRange(this.get('info.domainUri'), 'http://data.vlaanderen.be/ns/besluit#BestuursOrgaan');
+
+    //if multiple properties are found we want to display this in template
+    if(properties.length > 1)
+      this.set('displayProperties', true);
+
     let query = {
-      'filter[bestuurseenheid][id]': currentBestuurseenheid.id
+      'filter[is-tijdsspecialisatie-van][bestuurseenheid][id]': currentBestuurseenheid.id,
+      'include':'is-tijdsspecialisatie-van,is-tijdsspecialisatie-van.bestuurseenheid'
     };
-    let bestuursorganen = yield this.store.query('bestuursorgaan', query);
+    let bestuursorganenInTijd = yield this.store.query('bestuursorgaan', query);
     let bestuursorganenProperties = [];
-    bestuursorganen.forEach(b => {
+    bestuursorganenInTijd.forEach(b => {
       properties.forEach(p => {
-        bestuursorganenProperties.push({'bestuursorgaan': b, 'property': p});
+        bestuursorganenProperties.push({'b': b, 'p': p});
       });
     });
     this.set('bestuursorganenProperties', bestuursorganenProperties);
 
   }).restartable(),
+
+
+  async buildRdfa(data){
+    //Add extra RDFA annotations to be used by other plugins
+    let extRdfa = `<span property="ext:zittingBestuursorgaanInTijd" resource=${data.b.uri}>
+                 ${await data.b.get('isTijdsspecialisatieVan.naam')}
+               </span>`;
+
+    //The part which matches the provided model
+    let bestuursorgaanJsonApi = this.serializeToJsonApi(await data.b.get('isTijdsspecialisatieVan'));
+    let rdfa = await this.getReferRdfa(data.p, bestuursorgaanJsonApi, extRdfa);
+    return rdfa;
+  },
 
   didReceiveAttrs() {
     this._super(...arguments);
@@ -49,15 +68,7 @@ export default Component.extend(InsertResourceRelationCardMixin, {
 
   actions: {
     async refer(data){
-      let bestuursorgaanJsonApi = this.serializeToJsonApi(data.bestuursorgaan);
-      let rdfaRefer = await this.getReferRdfa(data.property, bestuursorgaanJsonApi, data.bestuursorgaan.naam);
-      this.editor.replaceNodeWithHTML(this.info.domNodeToUpdate , rdfaRefer, true);
-      this.get('hintsRegistry').removeHintsAtLocation(this.location, this.get('hrId'), 'editor-plugins/scoped-bestuursorgaan-card');
-    },
-    async extend(data){
-      let bestuursorgaanJsonApi = this.serializeToJsonApi(data.bestuursorgaan);
-      let rdfaExtended = await this.getExtendedRdfa(data.property, bestuursorgaanJsonApi);
-      this.editor.replaceNodeWithHTML(this.info.domNodeToUpdate , rdfaExtended, true);
+      this.editor.replaceNodeWithHTML(this.info.domNodeToUpdate , await this.buildRdfa(data), true);
       this.get('hintsRegistry').removeHintsAtLocation(this.location, this.get('hrId'), 'editor-plugins/scoped-bestuursorgaan-card');
     }
   }
