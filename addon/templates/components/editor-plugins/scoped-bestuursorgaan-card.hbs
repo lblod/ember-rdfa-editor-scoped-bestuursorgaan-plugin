@@ -1,15 +1,27 @@
-<p class="u-spacer--tiny">{{info.label}} <br>
+<div class="modal-dialog__header">
+  <div class="grid">
+    <div class="col--10-12">
+      <strong>{{info.label}}</strong>
+    </div>
+    <div class="col--2-12 u-align-right">
+      <a class="link--icon--close" href="#"> {{!-- TODO: action close {{action "remove" result.origModel}} --}}
+        <span class="u-visually-hidden">Venster sluiten</span>
+      </a>
+    </div>
+  </div>
+</div>
+<div class="modal-dialog__content modal-dialog__content--sectioned">
   {{#if getBestuursorganen.isRunning}}
-    <div class="loader"><span class="u-visually-hidden">Aan het laden</span></div>
+    <p class="loader"><span class="u-visually-hidden">Aan het laden</span></p>
   {{else}}
-    {{#each bestuursorganenProperties as |bp| }}
-      {{bp.bestuursorgaan.naam}} als {{bp.property.label}}
-      {{#wu-button-group}}
-        {{wu-button label="Voeg toe" size="small" isNarrow=true  commandLocation="below" onClick=(action "refer" bp)}}
-        {{wu-button label="Voeg toe (uitgebreid)" size="small" isNarrow=true  commandLocation="below" onClick=(action "extend" bp)}}
-      {{/wu-button-group}}
-    {{/each}}
+    <ul class="link-list link-list--bordered">
+      {{#each bestuursorganenProperties as |bp| }}
+        <li class="link-list__item">
+          <a class="" onclick={{action 'refer' bp}}>{{!-- Voeg --}} {{bp.b.isTijdsspecialisatieVan.naam}} {{!-- als {{bp.property.label}} toe --}}</a>
+        </li>
+      {{/each}}
+    </ul>
   {{/if}}
-</p>
+</div>
 
 {{yield}}
