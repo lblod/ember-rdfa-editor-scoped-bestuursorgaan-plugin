@@ -3,6 +3,7 @@ import EmberObject from '@ember/object';
 import { task } from 'ember-concurrency';
 import { isArray } from '@ember/array';
 import { warn } from '@ember/debug';
+import { inject as service } from '@ember/service';
 
 /**
  * Service responsible for correct annotation of dates
@@ -13,6 +14,10 @@ import { warn } from '@ember/debug';
  * @extends EmberService
  */
 const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
+  insertScopedOrgaan: "http://mu.semte.ch/vocabularies/ext/scopedBestuursorgaanText",
+  insertStandAloneBestuurseenheid: "http://mu.semte.ch/vocabularies/ext/setStandAloneCurrentBestuurseenheid",
+
+  currentSession: service(),
 
   /**
    * Restartable task to handle the incoming events from the editor dispatcher
@@ -30,7 +35,8 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
     if (contexts.length === 0) return [];
 
     const hints = [];
-    contexts.forEach((context) => {
+
+    yield Promise.all(contexts.map(async (context) => {
       let relevantContext = this.detectRelevantContext(context);
       if (relevantContext) {
         let richNodes = isArray(context.richNode) ? context.richNode : [ context.richNode ];
@@ -41,10 +47,23 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
           warn(`Trying to work on unattached domNode. Sorry can't handle these...`, {id: 'scoped-bestuursorgaan.domNode'});
           return;
         }
-        hintsRegistry.removeHintsInRegion(context.region, hrId, this.get('who'));
-        hints.pushObjects(this.generateHintsForContext(context, relevantContext, domNode));
+
+        if(relevantContext.predicate === this.insertStandAloneBestuurseenheid){
+          let bestuurseenheid = await this.currentSession.get('group');
+          editor.
+            replaceNodeWithHTML(domNode,
+                                `<span typeOf=besluit:Bestuurseenheid resource=${bestuurseenheid.uri}>
+                                   ${bestuurseenheid.naam}
+                                 </span>`);
+        }
+
+        if(relevantContext.predicate === this.insertScopedOrgaan){
+          hintsRegistry.removeHintsInRegion(context.region, hrId, this.get('who'));
+          hints.pushObjects(this.generateHintsForContext(context, relevantContext, domNode));
+        }
       }
-    });
+    }));
+
     const cards = hints.map( (hint) => this.generateCard(hrId, hintsRegistry, editor, hint));
     if(cards.length > 0){
       hintsRegistry.addHints(hrId, this.get('who'), cards);
@@ -63,7 +82,10 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
    * @private
    */
   detectRelevantContext(context){
-    if(context.context.slice(-1)[0].predicate == "http://mu.semte.ch/vocabularies/ext/scopedBestuursorgaanText"){
+    if(context.context.slice(-1)[0].predicate == this.insertScopedOrgaan){
+      return context.context.slice(-1)[0];
+    }
+    if(context.context.slice(-1)[0].predicate == this.insertStandAloneBestuurseenheid){
       return context.context.slice(-1)[0];
     }
     return null;

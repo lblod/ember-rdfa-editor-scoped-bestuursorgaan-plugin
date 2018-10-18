@@ -2,7 +2,7 @@
 ==============================================================================
 
 Plugin responsible for inserting bestuursorgaan, bestuurseenheden linked to
-profile of user
+profile of user. Within the context of a zitting.
 
 Installation
 ------------------------------------------------------------------------------
@@ -17,7 +17,18 @@ Usage
 Assumes user is logged in ACM/IDM with ember-acmidm-login service.
 
 For bestuursorgaan insert the instructive in editor-document:
-```<span property="ext:scopedBestuursorgaanText">selecteer bestuursorgaan</span>```
+```
+<span property="ext:scopedBestuursorgaanText">selecteer bestuursorgaan</span>
+```
+
+To set a reference to stand alone resoucre of bestuurseenheid.
+```
+<meta property="ext:setStandAloneCurrentBestuurseenheid"/>
+```
+This will result in an automated update:
+```
+<span typeof="besluit:Bestuurseenheid" resource="http://uri"> naam bestuurseenheid </span>
+```
 
 
 Contributing

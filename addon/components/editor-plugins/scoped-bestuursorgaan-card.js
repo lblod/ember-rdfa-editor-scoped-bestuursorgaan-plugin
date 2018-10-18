@@ -1,4 +1,5 @@
 import Component from '@ember/component';
+import serializeToJsonApi from '../../utils/serialize-to-json-api';
 import layout from '../../templates/components/editor-plugins/scoped-bestuursorgaan-card';
 import InsertResourceRelationCardMixin from '@lblod/ember-generic-model-plugin-utils/mixins/insert-resource-relation-card-mixin';
 import { inject as service } from '@ember/service';
@@ -17,13 +18,6 @@ export default Component.extend(InsertResourceRelationCardMixin, {
   store: service(),
 
   layout,
-
-  serializeToJsonApi(resource){
-    let serializedResource = resource.serialize({includeId: true});
-    //This is because we're not sure uri is kept (due to bug in mu-cl-resources/or ember-ds?)
-    serializedResource.data.attributes.uri = resource.uri;
-    return serializedResource;
-  },
 
   getBestuursorganen: task(function * (){
     let currentBestuurseenheid = yield this.currentSession.get('group');
@@ -56,7 +50,7 @@ export default Component.extend(InsertResourceRelationCardMixin, {
                </span>`;
 
     //The part which matches the provided model
-    let bestuursorgaanJsonApi = this.serializeToJsonApi(await data.b.get('isTijdsspecialisatieVan'));
+    let bestuursorgaanJsonApi = serializeToJsonApi(await data.b.get('isTijdsspecialisatieVan'));
     let rdfa = await this.getReferRdfa(data.p, bestuursorgaanJsonApi, extRdfa);
     return rdfa;
   },
