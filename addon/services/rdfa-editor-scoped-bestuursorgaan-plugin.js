@@ -14,8 +14,12 @@ import { inject as service } from '@ember/service';
  * @extends EmberService
  */
 const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
-  insertScopedOrgaan: "http://mu.semte.ch/vocabularies/ext/scopedBestuursorgaanText",
-  insertStandAloneBestuurseenheid: "http://mu.semte.ch/vocabularies/ext/setStandAloneCurrentBestuurseenheid",
+  overwriteScopedOrgaan: 'http://mu.semte.ch/vocabularies/ext/zittingBestuursorgaanInTijd',
+  insertScopedOrgaan: 'http://mu.semte.ch/vocabularies/ext/scopedBestuursorgaanText',
+  insertStandAloneBestuurseenheid: 'http://mu.semte.ch/vocabularies/ext/setStandAloneCurrentBestuurseenheid',
+
+  scopedOrgaan: 'editor-plugins/scoped-bestuursorgaan-card',
+  overwriteCard: 'editor-plugins/scoped-bestuursorgaan-overwrite-card',
 
   currentSession: service(),
 
@@ -35,38 +39,44 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
     if (contexts.length === 0) return [];
 
     const hints = [];
+    let cardName;
 
     yield Promise.all(contexts.map(async (context) => {
-      let relevantContext = this.detectRelevantContext(context);
-      if (relevantContext) {
-        let richNodes = isArray(context.richNode) ? context.richNode : [ context.richNode ];
-        let domNode = richNodes
-              .map(r => this.getDomElementForRdfaInstructiveContext(editor.rootNode, r.domNode, relevantContext.predicate))
-              .find(d => d);
-        if(!domNode){
-          warn(`Trying to work on unattached domNode. Sorry can't handle these...`, {id: 'scoped-bestuursorgaan.domNode'});
-          return;
-        }
+      let triple = this.detectRelevantContext(context);
+      if (!triple)
+        return;
 
-        if(relevantContext.predicate === this.insertStandAloneBestuurseenheid){
-          let bestuurseenheid = await this.currentSession.get('group');
-          editor.
-            replaceNodeWithHTML(domNode,
-                                `<span typeOf=besluit:Bestuurseenheid resource=${bestuurseenheid.uri}>
-                                   ${bestuurseenheid.naam}
-                                 </span>`);
-        }
+      let domNode = this.findDomNodeForContext(editor, context, this.domNodeMatchesRdfaInstructive(triple));
+      if(!domNode)
+        return;
 
-        if(relevantContext.predicate === this.insertScopedOrgaan){
-          hintsRegistry.removeHintsInRegion(context.region, hrId, this.get('who'));
-          hints.pushObjects(this.generateHintsForContext(context, relevantContext, domNode));
-        }
+      if(triple.predicate === this.insertStandAloneBestuurseenheid){
+        let bestuurseenheid = await this.currentSession.get('group');
+        editor.
+          replaceNodeWithHTML(domNode,
+                              `<span typeOf=besluit:Bestuurseenheid resource=${bestuurseenheid.uri}>
+                                 ${bestuurseenheid.naam}
+                               </span>`);
+      }
+
+      if(triple.predicate === this.insertScopedOrgaan){
+        cardName = this.scopedOrgaan;
+        hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
+        hints.pushObjects(this.generateHintsForContext(context, triple, domNode));
+      }
+
+      if(triple.predicate === this.overwriteScopedOrgaan){
+        //the overwriteScopedOrgaan context is always wrapped by insertScopedOrgaan context.
+        let nodeToReplace = this.findDomNodeForContext(editor, context, this.domNodeIsTypeof(context.context.slice(-2)[0].object));
+        cardName = this.overwriteCard;
+        hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
+        hints.pushObjects(this.generateHintsForContext(context, triple, nodeToReplace, { noHighlight: true }));
       }
     }));
 
-    const cards = hints.map( (hint) => this.generateCard(hrId, hintsRegistry, editor, hint));
+    const cards = hints.map( (hint) => this.generateCard(hrId, hintsRegistry, editor, hint, cardName));
     if(cards.length > 0){
-      hintsRegistry.addHints(hrId, this.get('who'), cards);
+      hintsRegistry.addHints(hrId, cardName, cards);
     }
   }).restartable(),
 
@@ -86,6 +96,9 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
       return context.context.slice(-1)[0];
     }
     if(context.context.slice(-1)[0].predicate == this.insertStandAloneBestuurseenheid){
+      return context.context.slice(-1)[0];
+    }
+    if(context.context.slice(-1)[0].predicate == this.overwriteScopedOrgaan){
       return context.context.slice(-1)[0];
     }
     return null;
@@ -119,7 +132,7 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
    *
    * @private
    */
-  generateCard(hrId, hintsRegistry, editor, hint){
+  generateCard(hrId, hintsRegistry, editor, hint, cardName){
     return EmberObject.create({
       info: {
         label: 'Voeg het relevante bestuursorgaan toe.',
@@ -131,7 +144,8 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
         hrId, hintsRegistry, editor
       },
       location: hint.location,
-      card: this.get('who')
+      options: hint.options,
+      card: cardName
     });
   },
 
@@ -146,35 +160,57 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
    *
    * @private
    */
-  generateHintsForContext(context, instructiveTriple, domNode){
+  generateHintsForContext(context, instructiveTriple, domNode, options = {}){
     const domainUri = this.findTypeForInstructive(context, instructiveTriple);
     const hints = [];
     const text = context.text;
     const location = context.region;
-    hints.push({text, location, domainUri, domNode, instructiveUri: instructiveTriple.predicate});
+    hints.push({text, location, domainUri, domNode, instructiveUri: instructiveTriple.predicate, options});
     return hints;
   },
 
-  /**
-   * Find matching domNode for RDFA instructive.
-   * We don't exactly know where it is located, hence some walking back.
-   */
-  getDomElementForRdfaInstructiveContext(rootNode, domNode, instructiveRdfa){
-    let ext = 'http://mu.semte.ch/vocabularies/ext/';
+  ascendDomNodesUntil(rootNode, domNode, condition){
     if(!domNode || rootNode.isEqualNode(domNode)) return null;
-    if(!domNode.attributes || !domNode.attributes.property){
-      return this.getDomElementForRdfaInstructiveContext(rootNode, domNode.parentElement, instructiveRdfa);
-    }
+    if(!condition(domNode))
+      return this.ascendDomNodesUntil(rootNode, domNode.parentElement, condition);
+    return domNode;
+  },
 
-    let expandedProperty = domNode.attributes.property.value.replace('ext:', ext);
-    if(instructiveRdfa == expandedProperty)
-      return domNode;
-    return this.getDomElementForRdfaInstructiveContext(rootNode, domNode.parentElement, instructiveRdfa);
+  domNodeMatchesRdfaInstructive(instructiveRdfa){
+    let ext = 'http://mu.semte.ch/vocabularies/ext/';
+    return (domNode) => {
+      if(!domNode.attributes || !domNode.attributes.property)
+        return false;
+      let expandedProperty = domNode.attributes.property.value.replace('ext:', ext);
+      if(instructiveRdfa.predicate == expandedProperty)
+        return true;
+      return false;
+    };
+  },
+
+  domNodeIsTypeof(uri){
+    return (domNode) => {
+      if(!domNode.attributes || !domNode.attributes.typeof){
+        return false;
+      }
+      if(domNode.attributes.typeof.value == uri){
+        return true;
+      }
+      return false;
+    };
+  },
+
+  findDomNodeForContext(editor, context, condition){
+    let richNodes = isArray(context.richNode) ? context.richNode : [ context.richNode ];
+    let domNode = richNodes
+          .map(r => this.ascendDomNodesUntil(editor.rootNode, r.domNode, condition))
+          .find(d => d);
+    if(!domNode){
+      warn(`Trying to work on unattached domNode. Sorry can't handle these...`, {id: 'scoped-bestuursorgaan.domNode'});
+    }
+    return domNode;
   }
 
 });
 
-RdfaEditorScopedBestuursorgaanPlugin.reopen({
-  who: 'editor-plugins/scoped-bestuursorgaan-card'
-});
 export default RdfaEditorScopedBestuursorgaanPlugin;
