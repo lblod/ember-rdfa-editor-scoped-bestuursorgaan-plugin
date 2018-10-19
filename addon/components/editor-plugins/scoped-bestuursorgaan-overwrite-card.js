@@ -1,7 +1,7 @@
 import Component from '@ember/component';
 import EmberObject from '@ember/object';
 import layout from '../../templates/components/editor-plugins/scoped-bestuursorgaan-overwrite-card';
-import InsertResourceRelationCardMixin from '@lblod/ember-generic-model-plugin-utils/mixins/insert-resource-relation-card-mixin';
+import InsertResourceRelationCardMixin from '@lblod/ember-rdfa-editor-generic-model-plugin-utils/mixins/insert-resource-relation-card-mixin';
 import { inject as service } from '@ember/service';
 import { task } from 'ember-concurrency';
 
