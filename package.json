@@ -1,13 +1,17 @@
 {
   "name": "@lblod/ember-rdfa-editor-scoped-bestuursorgaan-plugin",
   "version": "0.1.2",
-  "description": "The default blueprint for ember-cli addons.",
+  "description": "Ember RDFa editor Plugin to insert bestuursorgaan, bestuurseenheden linked to the profile of the user within the context of a zitting.
+The default blueprint for ember-cli addons.",
   "keywords": [
     "ember-addon"
   ],
-  "repository": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lblod/ember-rdfa-editor-generic-model-plugin-utils.git"
+  },
   "license": "MIT",
-  "author": "",
+  "author": "redpencil.io",
   "directories": {
     "doc": "doc",
     "test": "tests"
