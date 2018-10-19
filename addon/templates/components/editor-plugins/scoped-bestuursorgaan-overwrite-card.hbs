@@ -15,23 +15,16 @@
     <p class="loader"><span class="u-visually-hidden">Aan het laden</span></p>
   {{else}}
     <ul class="link-list link-list--bordered">
-      {{#each bestuursorganenProperties as |bp| }}
+      {{#each bestuursorganenInTijd as |b| }}
         <li class="link-list__item">
-          <a class="" onclick={{action 'refer' bp}}>
-            {{!-- Voeg --}}
-            {{bp.b.isTijdsspecialisatieVan.naam}}
-            (periode: {{bp.b.bindingStart}} - {{#if bp.b.bindingEinde}}{{bp.b.bindingEinde}}{{else}}nvt.{{/if}})
-            {{#if displayProperties}}
-              als {{bp.p.label}}
-            {{/if}}
+          <a class="" onclick={{action 'refer' b}}>
+            {{b.isTijdsspecialisatieVan.naam}}
+            (periode: {{b.bindingStart}} - {{#if b.bindingEinde}}{{b.bindingEinde}}{{else}}nvt.{{/if}})
           </a>
-          {{!--             {{#wu-button-group}}
-          {{wu-button label="Voeg toe" size="small" isNarrow=true  commandLocation="below" onClick=(action "refer" bp)}}
-          {{wu-button label="Voeg uitgebreid toe" size="small" isNarrow=true  commandLocation="below" onClick=(action "extend" bp)}}
-          {{/wu-button-group}} --}}
         </li>
       {{/each}}
     </ul>
   {{/if}}
 </div>
+
 {{yield}}
