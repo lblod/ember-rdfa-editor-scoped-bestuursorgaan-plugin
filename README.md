@@ -23,7 +23,7 @@ For bestuursorgaan insert the instructive in editor-document:
 
 To set a reference to stand alone resoucre of bestuurseenheid.
 ```
-<meta property="ext:setStandAloneCurrentBestuurseenheid"/>
+<span property="ext:setStandAloneCurrentBestuurseenheid">huidig eenheid</span>
 ```
 This will result in an automated update:
 ```
