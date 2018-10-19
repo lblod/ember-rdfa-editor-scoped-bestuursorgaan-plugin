@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "ember-cli-babel": "^6.16.0",
-    "@lblod/ember-generic-model-plugin-utils": "^0.1.3",
+    "@lblod/ember-rdfa-editor-generic-model-plugin-utils": "^0.2.0",
     "ember-cli-htmlbars": "^3.0.0"
   },
   "devDependencies": {
