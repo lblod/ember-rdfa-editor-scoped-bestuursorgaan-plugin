@@ -24,21 +24,18 @@ export default Component.extend(InsertResourceRelationCardMixin, {
   }).restartable(),
 
   async buildRdfa(data, nodeToReplace){
-    //Add extra RDFA annotations to be used by other plugins
-    let extRdfa = `<span property="ext:zittingBestuursorgaanInTijd" resource=${data.uri}>
-                     ${await data.get('isTijdsspecialisatieVan.naam')}
-                   </span>`;
     let property = nodeToReplace.attributes.property ? `property=${nodeToReplace.attributes.property.value}` : '';
-    let rdfa = `<div ${property} typeof=${nodeToReplace.attributes.typeof.value} resource=${await data.get('isTijdsspecialisatieVan.uri')}>
-                  ${extRdfa}
-               </div>`;
+    let rdfa = `<span ${property} typeof=${nodeToReplace.attributes.typeof.value} resource=${await data.uri}>
+                  ${await data.get('isTijdsspecialisatieVan.naam')}
+               </span`;
 
     return rdfa;
   },
 
-  //if text doesn't change, nothing will be triggered. So we need to keep hint
+  //if text doesn't change, nothing will be triggered. So we need to keep hint.
+  // This case should actually be taken care of by rdfa-editor.
   async needsNewHint(data, nodeToReplace){
-    return (await data.get('isTijdsspecialisatieVan.uri')) == nodeToReplace.attributes.resource.value;
+    return nodeToReplace.textContent.indexOf(data.get('isTijdsspecialisatieVan.naam')) > -1;
   },
 
    didReceiveAttrs() {

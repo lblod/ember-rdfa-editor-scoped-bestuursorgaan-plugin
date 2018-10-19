@@ -44,14 +44,8 @@ export default Component.extend(InsertResourceRelationCardMixin, {
 
 
   async buildRdfa(data){
-    //Add extra RDFA annotations to be used by other plugins
-    let extRdfa = `<span property="ext:zittingBestuursorgaanInTijd" resource=${data.b.uri}>
-                 ${await data.b.get('isTijdsspecialisatieVan.naam')}
-               </span>`;
-
-    //The part which matches the provided model
-    let bestuursorgaanJsonApi = serializeToJsonApi(await data.b.get('isTijdsspecialisatieVan'));
-    let rdfa = await this.getReferRdfa(data.p, bestuursorgaanJsonApi, extRdfa);
+    let bestuursorgaanJsonApi = serializeToJsonApi(await data.b);
+    let rdfa = await this.getReferRdfa(data.p, bestuursorgaanJsonApi, await data.b.get('isTijdsspecialisatieVan.naam'));
     return rdfa;
   },
 

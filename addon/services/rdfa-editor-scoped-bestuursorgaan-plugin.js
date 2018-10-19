@@ -14,7 +14,7 @@ import { inject as service } from '@ember/service';
  * @extends EmberService
  */
 const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
-  overwriteScopedOrgaan: 'http://mu.semte.ch/vocabularies/ext/zittingBestuursorgaanInTijd',
+  overwriteScopedOrgaan: 'http://data.vlaanderen.be/ns/besluit#Bestuursorgaan',
   insertScopedOrgaan: 'http://mu.semte.ch/vocabularies/ext/scopedBestuursorgaanText',
   insertStandAloneBestuurseenheid: 'http://mu.semte.ch/vocabularies/ext/setStandAloneCurrentBestuurseenheid',
 
@@ -46,11 +46,9 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
       if (!triple)
         return;
 
-      let domNode = this.findDomNodeForContext(editor, context, this.domNodeMatchesRdfaInstructive(triple));
-      if(!domNode)
-        return;
-
       if(triple.predicate === this.insertStandAloneBestuurseenheid){
+        let domNode = this.findDomNodeForContext(editor, context, this.domNodeMatchesRdfaInstructive(triple));
+        if(!domNode) return;
         let bestuurseenheid = await this.currentSession.get('group');
         editor.
           replaceNodeWithHTML(domNode,
@@ -60,14 +58,16 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
       }
 
       if(triple.predicate === this.insertScopedOrgaan){
+        let domNode = this.findDomNodeForContext(editor, context, this.domNodeMatchesRdfaInstructive(triple));
+        if(!domNode) return;
         cardName = this.scopedOrgaan;
         hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
         hints.pushObjects(this.generateHintsForContext(context, triple, domNode));
       }
 
-      if(triple.predicate === this.overwriteScopedOrgaan){
+      if(triple.object === this.overwriteScopedOrgaan){
         //the overwriteScopedOrgaan context is always wrapped by insertScopedOrgaan context.
-        let nodeToReplace = this.findDomNodeForContext(editor, context, this.domNodeIsTypeof(context.context.slice(-2)[0].object));
+        let nodeToReplace = this.findDomNodeForContext(editor, context, this.domNodeIsTypeof(this.overwriteScopedOrgaan));
         cardName = this.overwriteCard;
         hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
         hints.pushObjects(this.generateHintsForContext(context, triple, nodeToReplace, { noHighlight: true }));
@@ -98,7 +98,7 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
     if(context.context.slice(-1)[0].predicate == this.insertStandAloneBestuurseenheid){
       return context.context.slice(-1)[0];
     }
-    if(context.context.slice(-1)[0].predicate == this.overwriteScopedOrgaan){
+    if(context.context.slice(-1)[0].predicate == 'a' && context.context.slice(-1)[0].object == this.overwriteScopedOrgaan){
       return context.context.slice(-1)[0];
     }
     return null;
