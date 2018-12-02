@@ -16,7 +16,8 @@ export default Component.extend(InsertResourceRelationCardMixin, {
     let currentBestuurseenheid = yield this.currentSession.get('group');
     let query = {
       'filter[is-tijdsspecialisatie-van][bestuurseenheid][id]': currentBestuurseenheid.id,
-      'include':'is-tijdsspecialisatie-van,is-tijdsspecialisatie-van.bestuurseenheid'
+      'include':'is-tijdsspecialisatie-van,is-tijdsspecialisatie-van.bestuurseenheid',
+      'sort': '-binding-start'
     };
     let bestuursorganenInTijd = yield this.store.query('bestuursorgaan', query);
     this.set('bestuursorganenInTijd', bestuursorganenInTijd);
