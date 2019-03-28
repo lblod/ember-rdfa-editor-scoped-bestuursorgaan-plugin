@@ -1,3 +1,4 @@
+import { get } from '@ember/object';
 import Service from '@ember/service';
 import EmberObject from '@ember/object';
 import { task } from 'ember-concurrency';
@@ -67,7 +68,7 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
 
       if(triple.object === this.overwriteScopedOrgaan){
         //the overwriteScopedOrgaan context is always wrapped by insertScopedOrgaan context.
-        let nodeToReplace = this.findDomNodeForContext(editor, context, this.domNodeIsTypeof(this.overwriteScopedOrgaan));
+        let nodeToReplace = this.findDomNodeForContext(editor, context, this.conditionDomNodeIsTypeof(this.overwriteScopedOrgaan));
         cardName = this.overwriteCard;
         hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
         hints.pushObjects(this.generateHintsForContext(context, triple, nodeToReplace, { noHighlight: true }));
@@ -188,16 +189,8 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
     };
   },
 
-  domNodeIsTypeof(uri){
-    return (domNode) => {
-      if(!domNode.attributes || !domNode.attributes.typeof){
-        return false;
-      }
-      if(domNode.attributes.typeof.value == uri){
-        return true;
-      }
-      return false;
-    };
+  conditionDomNodeIsTypeof(uri){
+    return (domNode) => get( domNode, "attributes.typeof" ) == uri;
   },
 
   findDomNodeForContext(editor, context, condition){
