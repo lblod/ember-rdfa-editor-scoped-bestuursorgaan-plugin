@@ -51,11 +51,11 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
         let domNode = this.findDomNodeForContext(editor, context, this.domNodeMatchesRdfaInstructive(triple));
         if(!domNode) return;
         let bestuurseenheid = await this.currentSession.get('group');
-        editor.
-          replaceNodeWithHTML(domNode,
-                              `<span typeOf=besluit:Bestuurseenheid resource=${bestuurseenheid.uri}>
-                                 ${bestuurseenheid.naam}
-                               </span>`);
+        editor.replaceNodeWithHTML(
+          domNode,
+          `<span typeOf=besluit:Bestuurseenheid resource=${bestuurseenheid.uri}>
+             ${bestuurseenheid.naam}
+           </span>`);
       }
 
       if(triple.predicate === this.insertScopedOrgaan){

@@ -57,7 +57,14 @@ export default Component.extend(InsertResourceRelationCardMixin, {
 
   actions: {
     async refer(data){
-      this.editor.replaceNodeWithHTML(this.info.domNodeToUpdate , await this.buildRdfa(data), true);
+      const rdfa = await this.buildRdfa(data);
+      // TODO: we should figure out the updated position of our
+      // annotation.  then we should find the lowest node containing
+      // this slab of content and we should walk up from there to find
+      // the right dom node for us to replace the contents of.  in all
+      // other cases this code will be broken if the text node which
+      // we're given is replaced.
+      this.editor.replaceNodeWithHTML(this.info.domNodeToUpdate , rdfa, true);
       this.get('hintsRegistry').removeHintsAtLocation(this.location, this.get('hrId'), 'editor-plugins/scoped-bestuursorgaan-card');
     }
   }
