@@ -79,8 +79,6 @@ export default Component.extend(InsertResourceRelationCardMixin, {
     // TODO: this sort of logic should be in contenteditable (or
     // better yet, in the generic offered API)
 
-    let property = nodeToReplace.getAttribute('property') ? `property="${nodeToReplace.getAttribute('property')}"` : '';
-
     if( !nodeToReplace ) {
       warn("Could not find node to replace from contexts");
     }
