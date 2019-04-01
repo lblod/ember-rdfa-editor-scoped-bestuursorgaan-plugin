@@ -1,3 +1,4 @@
+import { warn } from '@ember/debug';
 import Component from '@ember/component';
 import EmberObject from '@ember/object';
 import layout from '../../templates/components/editor-plugins/scoped-bestuursorgaan-overwrite-card';
@@ -24,9 +25,9 @@ export default Component.extend(InsertResourceRelationCardMixin, {
 
   }).restartable(),
 
-  async buildRdfa(data, nodeToReplace){
-    let property = nodeToReplace.attributes.property ? `property=${nodeToReplace.attributes.property.value}` : '';
-    let rdfa = `<span ${property} typeof=${nodeToReplace.attributes.typeof.value} resource=${await data.uri}>
+  async buildRdfa( data, nodeToReplace ){
+    let property = nodeToReplace.getAttribute('property') ? `property="${nodeToReplace.getAttribute('property')}"` : '';
+    let rdfa = `<span ${property} typeof="${nodeToReplace.getAttribute('value')}" resource="${await data.uri}">
                   ${await data.get('isTijdsspecialisatieVan.naam')}
                </span`;
 
@@ -61,9 +62,47 @@ export default Component.extend(InsertResourceRelationCardMixin, {
     });
   },
 
+  findNodeToReplace() {
+    let newLocation = this.hintsRegistry.updateLocationToCurrentIndex( this.hrId, this.location );
+    let nodeToReplace = this.editor
+        .getContexts( { region: newLocation } )
+        .find( (block) => block.context.find(
+          (context) => context.predicate == 'a' && context.object == 'http://data.vlaanderen.be/ns/besluit#Bestuursorgaan' ) )
+        .richNode[0]
+        .domNode;
+
+    // TODO: cope with region yielding too many context blocks and the
+    // first one not being the right one.  Note that the current
+    // context scanner can't yield this case, yet it's not guaranteed
+    // not to yield it.
+
+    // TODO: this sort of logic should be in contenteditable (or
+    // better yet, in the generic offered API)
+
+    let property = nodeToReplace.getAttribute('property') ? `property="${nodeToReplace.getAttribute('property')}"` : '';
+
+    if( !nodeToReplace ) {
+      warn("Could not find node to replace from contexts");
+    }
+
+    while( !nodeToReplace.getAttribute
+           || ( nodeToReplace.getAttribute( "typeof" ) !== 'http://data.vlaanderen.be/ns/besluit#Bestuursorgaan'
+               && nodeToReplace.getAttribute( "typeof" ) != 'besluit:Bestuursorgaan' ) ) {
+      // TODO: this is terrible, we should cope with the prefixes!
+      nodeToReplace = nodeToReplace.parentNode;
+
+      if( !nodeToReplace ) {
+        warn("Could not find suitable node to replace in tree");
+      }
+    }
+
+    return nodeToReplace;
+  },
+
   actions: {
     async refer(data){
-      let newNodes = this.editor.replaceNodeWithHTML(this.info.domNodeToUpdate, await this.buildRdfa(data, this.info.domNodeToUpdate), true);
+      let nodeToReplace = this.findNodeToReplace();
+      let newNodes = this.editor.replaceNodeWithHTML(nodeToReplace, await this.buildRdfa(data, nodeToReplace), true);
       this.get('hintsRegistry').removeHintsAtLocation(this.location, this.get('hrId'), this.card);
       if(await this.needsNewHint(data, this.info.domNodeToUpdate)){
         this.hintsRegistry.addHints(this.hrId, this.card, [ this.generateCard(newNodes[0]) ]);
