@@ -25,8 +25,48 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
   currentSession: service(),
 
   /**
-   * Restartable task to handle the incoming events from the editor dispatcher
+   * Restartable task to handle:
+   *  a. auto insert current bestuurseenheid based on RDFA instructive..
+   *  b. set a hint around a node which contains property with type bestuursorgaan
+   *  c. based on RDFA instructive, set a hint to select a bestuursorgaan
+   * ---------------------------------------------------
+   * CODE REVIEW NOTES
+   * ---------------------------------------------------
    *
+   *  INTERACTION PATTERNS
+   *  --------------------
+   *  For a. :
+   *   - checks if rdfa instructive is met. Replace node attached to richNode with current bestuurseenheid.
+   *
+   *   For b. :
+   *   - checks if there is a node with property with domain Bestuursorgaan. Inserts invisible hint on textual content.
+   *     On reselect or insert card, the node is replaced with updated content.
+   *
+   *   For c. :
+   *  - checks if there an instructive to add a bestuursorgaan (in tijd). Highlights the text, the parent node is passed to the card.
+   *    On insert the parent node is replaced with wanted content.
+   *
+   *  POTENTIAL ISSUES/TODO
+   *  ---------------------
+   *  -  Replacing domNodes not attached to the tree anymore (problem for a. and c.)
+   *     TODO: a robust handling and decent fallback if dead node is found.
+   *           This is potentially (as a POC) mitigated in flow b.
+   *
+   *  - Instructives could pollute RDFA content. e.g. <span property="aRealProperty:foo"><property="ext:instructive"> test </span></span>
+   *    The resource will result in {subject, predicate: "aRealProperty:foo", object: "test"}
+   *     TODO: implement more expressive instructives wich DO NOT set aRealProperty
+   *
+   *  - Reconsider the restartable task
+   *
+   *
+   *  OTHER INFO
+   *  ----------
+   *  - uses metamodel plugin utils to:
+   *      1.  check wich property the bestuursorgaan to insert belongs to.
+   *      2.  (as premature optimisation, so get rid of this) Some rdfa serialization utils of the bestuursorgaan to insert.
+   * ---------------------------------------------------
+   * END CODE REVIEW NOTES
+   * ---------------------------------------------------
    * @method execute
    *
    * @param {string} hrId Unique identifier of the event in the hintsRegistry
