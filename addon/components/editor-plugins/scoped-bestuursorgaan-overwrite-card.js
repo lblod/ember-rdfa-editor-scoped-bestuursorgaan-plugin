@@ -102,7 +102,7 @@ export default Component.extend(InsertResourceRelationCardMixin, {
       let nodeToReplace = this.findNodeToReplace();
       let newNodes = this.editor.replaceNodeWithHTML(nodeToReplace, await this.buildRdfa(data, nodeToReplace), true);
       this.get('hintsRegistry').removeHintsAtLocation(this.location, this.get('hrId'), this.card);
-      if(await this.needsNewHint(data, this.info.domNodeToUpdate)){
+      if(await this.needsNewHint(data, nodeToReplace)){
         this.hintsRegistry.addHints(this.hrId, this.card, [ this.generateCard(newNodes[0]) ]);
       }
     }
