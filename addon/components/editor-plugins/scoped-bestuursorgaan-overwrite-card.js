@@ -27,7 +27,7 @@ export default Component.extend(InsertResourceRelationCardMixin, {
 
   async buildRdfa( data, nodeToReplace ){
     let property = nodeToReplace.getAttribute('property') ? `property="${nodeToReplace.getAttribute('property')}"` : '';
-    let rdfa = `<span ${property} typeof="${nodeToReplace.getAttribute('value')}" resource="${await data.uri}">
+    let rdfa = `<span ${property} typeof="${nodeToReplace.getAttribute('typeof')}" resource="${await data.uri}">
                   ${await data.get('isTijdsspecialisatieVan.naam')}
                </span`;
 
