@@ -230,7 +230,7 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
   },
 
   conditionDomNodeIsTypeof(uri){
-    return (domNode) => get( domNode, "attributes.typeof" ) == uri;
+    return (domNode) => get( domNode, "attributes.typeof.value" ) == uri;
   },
 
   findDomNodeForContext(editor, context, condition){
