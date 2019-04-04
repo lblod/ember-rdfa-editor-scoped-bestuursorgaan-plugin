@@ -1,6 +1,6 @@
 {
   "name": "@lblod/ember-rdfa-editor-scoped-bestuursorgaan-plugin",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "Ember RDFa editor Plugin to insert bestuursorgaan, bestuurseenheden linked to the profile of the user within the context of a zitting.",
   "keywords": [
     "ember-addon"
