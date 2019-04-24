@@ -64,8 +64,8 @@ export default Component.extend(InsertResourceRelationCardMixin, {
       // the right dom node for us to replace the contents of.  in all
       // other cases this code will be broken if the text node which
       // we're given is replaced.
-      this.editor.replaceNodeWithHTML(this.info.domNodeToUpdate , rdfa, true);
       this.get('hintsRegistry').removeHintsAtLocation(this.location, this.get('hrId'), 'editor-plugins/scoped-bestuursorgaan-card');
+      this.editor.replaceNodeWithHTML(this.info.domNodeToUpdate , rdfa, true);
     }
   }
 });
