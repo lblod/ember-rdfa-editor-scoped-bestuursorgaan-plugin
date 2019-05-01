@@ -119,7 +119,7 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
     if(cards.length > 0){
       hintsRegistry.addHints(hrId, cardName, cards);
     }
-  }).restartable(),
+  }),
 
   /**
    * Given context object, tries to detect a context the plugin can work on
