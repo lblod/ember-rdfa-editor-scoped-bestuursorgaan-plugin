@@ -82,7 +82,9 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
     const hints = [];
     let cardName;
 
-    yield Promise.all(contexts.map(async (context) => {
+    let bestuurseenheid = yield this.currentSession.get('group');
+
+    contexts.map(async (context) => {
       let triple = this.detectRelevantContext(context);
       if (!triple)
         return;
@@ -90,7 +92,6 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
       if(triple.predicate === this.insertStandAloneBestuurseenheid){
         let domNode = this.findDomNodeForContext(editor, context, this.domNodeMatchesRdfaInstructive(triple));
         if(!domNode) return;
-        let bestuurseenheid = await this.currentSession.get('group');
         editor.replaceNodeWithHTML(
           domNode,
           `<span typeOf=besluit:Bestuurseenheid resource=${bestuurseenheid.uri}>
@@ -113,7 +114,7 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
         hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
         hints.pushObjects(this.generateHintsForContext(context, triple, nodeToReplace, { noHighlight: true }));
       }
-    }));
+    });
 
     const cards = hints.map( (hint) => this.generateCard(hrId, hintsRegistry, editor, hint, cardName));
     if(cards.length > 0){
