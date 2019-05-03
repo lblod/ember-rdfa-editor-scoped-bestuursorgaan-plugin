@@ -79,12 +79,18 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
   execute: task(function * (hrId, contexts, hintsRegistry, editor) {
     if (contexts.length === 0) return [];
 
-    const hints = [];
     let cardName;
 
     let bestuurseenheid = yield this.currentSession.get('group');
 
-    contexts.map(async (context) => {
+    contexts.forEach( (context) => {
+      // clear previous hints
+      hintsRegistry.removeHintsInRegion(context.region, hrId, this.scopedOrgaan);
+      hintsRegistry.removeHintsInRegion(context.region, hrId, this.overwriteCard);
+    });
+
+    contexts.forEach( (context) => {
+      // add new hints
       let triple = this.detectRelevantContext(context);
       if (!triple)
         return;
@@ -97,29 +103,34 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
           `<span typeOf=besluit:Bestuurseenheid resource=${bestuurseenheid.uri}>
              ${bestuurseenheid.naam}
            </span>`);
-      }
+      } else {
+        if(triple.predicate === this.insertScopedOrgaan){
+          let domNode = this.findDomNodeForContext(editor, context, this.domNodeMatchesRdfaInstructive(triple));
+          if(!domNode) return;
+          cardName = this.scopedOrgaan;
+          hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
+          console.log(`RM:i ${context.region}`);
+          let newCards =
+              this
+              .generateHintsForContext(context, triple, domNode)
+              .map( (hint) => this.generateCard( hrId, hintsRegistry, editor, hint, cardName, 'Bestuursorgaan from insert' ) );
+          hintsRegistry.addHints(hrId, cardName, newCards);
+        }
 
-      if(triple.predicate === this.insertScopedOrgaan){
-        let domNode = this.findDomNodeForContext(editor, context, this.domNodeMatchesRdfaInstructive(triple));
-        if(!domNode) return;
-        cardName = this.scopedOrgaan;
-        hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
-        hints.pushObjects(this.generateHintsForContext(context, triple, domNode));
+        if(triple.object === this.overwriteScopedOrgaan){
+          // the overwriteScopedOrgaan context is always wrapped by insertScopedOrgaan context.
+          let nodeToReplace = this.findDomNodeForContext(editor, context, this.conditionDomNodeIsTypeof(this.overwriteScopedOrgaan));
+          cardName = this.overwriteCard;
+          hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
+          console.log(`RM:o ${context.region}`);
+          let newCards =
+              this
+              .generateHintsForContext(context, triple, nodeToReplace, { noHighlight: true })
+              .map( (hint) => this.generateCard( hrId, hintsRegistry, editor, hint, cardName, 'Bestuursorgaan from overwrite' ) );
+          hintsRegistry.addHints(hrId, cardName, newCards);
+        }
       }
-
-      if(triple.object === this.overwriteScopedOrgaan){
-        //the overwriteScopedOrgaan context is always wrapped by insertScopedOrgaan context.
-        let nodeToReplace = this.findDomNodeForContext(editor, context, this.conditionDomNodeIsTypeof(this.overwriteScopedOrgaan));
-        cardName = this.overwriteCard;
-        hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
-        hints.pushObjects(this.generateHintsForContext(context, triple, nodeToReplace, { noHighlight: true }));
-      }
-    });
-
-    const cards = hints.map( (hint) => this.generateCard(hrId, hintsRegistry, editor, hint, cardName));
-    if(cards.length > 0){
-      hintsRegistry.addHints(hrId, cardName, cards);
-    }
+    } );
   }),
 
   /**
@@ -174,10 +185,10 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
    *
    * @private
    */
-  generateCard(hrId, hintsRegistry, editor, hint, cardName){
+  generateCard(hrId, hintsRegistry, editor, hint, cardName, label = 'Voeg het relevante bestuursorgaan toe.' ){
     return EmberObject.create({
       info: {
-        label: 'Voeg het relevante bestuursorgaan toe.',
+        label: label,
         plainValue: hint.text,
         location: hint.location,
         domainUri: hint.domainUri,
@@ -237,8 +248,8 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
   findDomNodeForContext(editor, context, condition){
     let richNodes = isArray(context.richNode) ? context.richNode : [ context.richNode ];
     let domNode = richNodes
-          .map(r => this.ascendDomNodesUntil(editor.rootNode, r.domNode, condition))
-          .find(d => d);
+        .map(r => this.ascendDomNodesUntil(editor.rootNode, r.domNode, condition))
+        .find(d => d);
     if(!domNode){
       warn(`Trying to work on unattached domNode. Sorry can't handle these...`, {id: 'scoped-bestuursorgaan.domNode'});
     }
