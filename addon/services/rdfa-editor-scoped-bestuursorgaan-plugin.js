@@ -109,7 +109,6 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
           if(!domNode) return;
           cardName = this.scopedOrgaan;
           hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
-          console.log(`RM:i ${context.region}`);
           let newCards =
               this
               .generateHintsForContext(context, triple, domNode)
@@ -122,7 +121,6 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
           let nodeToReplace = this.findDomNodeForContext(editor, context, this.conditionDomNodeIsTypeof(this.overwriteScopedOrgaan));
           cardName = this.overwriteCard;
           hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
-          console.log(`RM:o ${context.region}`);
           let newCards =
               this
               .generateHintsForContext(context, triple, nodeToReplace, { noHighlight: true })
