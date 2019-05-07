@@ -80,7 +80,7 @@ export default Component.extend(InsertResourceRelationCardMixin, {
     // better yet, in the generic offered API)
 
     if( !nodeToReplace ) {
-      warn("Could not find node to replace from contexts");
+      warn("Could not find node to replace from contexts", {id: 'bestuursorgaanplugin.nodetoreplace'});
     }
 
     while( !nodeToReplace.getAttribute
@@ -90,7 +90,7 @@ export default Component.extend(InsertResourceRelationCardMixin, {
       nodeToReplace = nodeToReplace.parentNode;
 
       if( !nodeToReplace ) {
-        warn("Could not find suitable node to replace in tree");
+        warn("Could not find suitable node to replace in tree",  {id: 'bestuursorgaanplugin.nodetoreplace'});
       }
     }
 
