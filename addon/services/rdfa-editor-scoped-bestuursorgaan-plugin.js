@@ -112,7 +112,7 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
           let newCards =
               this
               .generateHintsForContext(context, triple, domNode)
-              .map( (hint) => this.generateCard( hrId, hintsRegistry, editor, hint, cardName, 'Bestuursorgaan from insert' ) );
+              .map( (hint) => this.generateCard( hrId, hintsRegistry, editor, hint, cardName ) );
           hintsRegistry.addHints(hrId, cardName, newCards);
         }
 
@@ -124,7 +124,7 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
           let newCards =
               this
               .generateHintsForContext(context, triple, nodeToReplace, { noHighlight: true })
-              .map( (hint) => this.generateCard( hrId, hintsRegistry, editor, hint, cardName, 'Bestuursorgaan from overwrite' ) );
+              .map( (hint) => this.generateCard( hrId, hintsRegistry, editor, hint, cardName ) );
           hintsRegistry.addHints(hrId, cardName, newCards);
         }
       }
