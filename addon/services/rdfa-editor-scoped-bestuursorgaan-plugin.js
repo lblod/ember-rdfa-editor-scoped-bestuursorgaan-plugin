@@ -214,7 +214,7 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
   generateHintsForContext(context, instructiveTriple, domNode, options = {}){
     const domainUri = this.findTypeForInstructive(context, instructiveTriple);
     const hints = [];
-    const text = context.text;
+    const text = context.text ?  context.text : "";
     const location = context.region;
     hints.push({text, location, domainUri, domNode, instructiveUri: instructiveTriple.predicate, options});
     return hints;
@@ -244,7 +244,7 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
   },
 
   findDomNodeForContext(editor, context, condition){
-    let richNodes = isArray(context.richNode) ? context.richNode : [ context.richNode ];
+    let richNodes = context.richNodes;
     let domNode = richNodes
         .map(r => this.ascendDomNodesUntil(editor.rootNode, r.domNode, condition))
         .find(d => d);
