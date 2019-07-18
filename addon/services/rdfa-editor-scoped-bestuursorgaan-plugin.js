@@ -56,7 +56,6 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
    *    The resource will result in {subject, predicate: "aRealProperty:foo", object: "test"}
    *     TODO: implement more expressive instructives wich DO NOT set aRealProperty
    *
-   *  - Reconsider the restartable task
    *
    *
    *  OTHER INFO
@@ -78,7 +77,6 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
    */
   execute: task(function * (hrId, contexts, hintsRegistry, editor) {
     if (contexts.length === 0) return [];
-
     let cardName;
 
     let bestuurseenheid = yield this.currentSession.get('group');
@@ -89,46 +87,43 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
       hintsRegistry.removeHintsInRegion(context.region, hrId, this.overwriteCard);
     });
 
-    contexts.forEach( (context) => {
+    for (let context of contexts) {
       // add new hints
-      let triple = this.detectRelevantContext(context);
-      if (!triple)
-        return;
-
-      if(triple.predicate === this.insertStandAloneBestuurseenheid){
-        let domNode = this.findDomNodeForContext(editor, context, this.domNodeMatchesRdfaInstructive(triple));
-        if(!domNode) return;
-        editor.replaceNodeWithHTML(
-          domNode,
-          `<span typeOf=besluit:Bestuurseenheid resource=${bestuurseenheid.uri}>
-             ${bestuurseenheid.naam}
-           </span>`);
-      } else {
-        if(triple.predicate === this.insertScopedOrgaan){
-          let domNode = this.findDomNodeForContext(editor, context, this.domNodeMatchesRdfaInstructive(triple));
-          if(!domNode) return;
+      const triple = this.detectRelevantContext(context);
+      if (triple) {
+        const selectContext = { property: triple.predicate };
+        if(triple.predicate === this.insertStandAloneBestuurseenheid){
+          const selection = editor.selectContext(context.region, selectContext);
+          editor.update(selection, {
+            remove: { property: this.insertStandAloneBestuurseenheid},
+            set: {
+              typeof: "besluit:Bestuurseenheid",
+              resource: bestuurseenheid.uri,
+              innerHTML: `${bestuurseenheid.naam}`
+            }
+          });
+        }
+        else if(triple.predicate === this.insertScopedOrgaan){
           cardName = this.scopedOrgaan;
           hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
           let newCards =
               this
-              .generateHintsForContext(context, triple, domNode)
+              .generateHintsForContext(context, triple, selectContext)
               .map( (hint) => this.generateCard( hrId, hintsRegistry, editor, hint, cardName ) );
           hintsRegistry.addHints(hrId, cardName, newCards);
         }
-
-        if(triple.object === this.overwriteScopedOrgaan){
+        else if(triple.object === this.overwriteScopedOrgaan){
           // the overwriteScopedOrgaan context is always wrapped by insertScopedOrgaan context.
-          let nodeToReplace = this.findDomNodeForContext(editor, context, this.conditionDomNodeIsTypeof(this.overwriteScopedOrgaan));
           cardName = this.overwriteCard;
           hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
           let newCards =
               this
-              .generateHintsForContext(context, triple, nodeToReplace, { noHighlight: true })
+              .generateHintsForContext(context, triple, selectContext, { noHighlight: true })
               .map( (hint) => this.generateCard( hrId, hintsRegistry, editor, hint, cardName ) );
           hintsRegistry.addHints(hrId, cardName, newCards);
         }
       }
-    } );
+    }
   }),
 
   /**
@@ -190,8 +185,9 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
         plainValue: hint.text,
         location: hint.location,
         domainUri: hint.domainUri,
-        domNodeToUpdate: hint.domNode,
+        context: hint.selectContext,
         instructiveUri: hint.instructiveUri,
+        huidigBestuursorgaanInTijd: hint.huidigBestuursorgaanInTijd,
         hrId, hintsRegistry, editor
       },
       location: hint.location,
@@ -211,49 +207,15 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
    *
    * @private
    */
-  generateHintsForContext(context, instructiveTriple, domNode, options = {}){
+  generateHintsForContext(context, instructiveTriple, selectContext, options = {}){
     const domainUri = this.findTypeForInstructive(context, instructiveTriple);
     const hints = [];
     const text = context.text ?  context.text : "";
     const location = context.region;
-    hints.push({text, location, domainUri, domNode, instructiveUri: instructiveTriple.predicate, options});
+    const huidigBestuursorgaanInTijd = instructiveTriple.subject;
+    hints.push({text, location, domainUri, selectContext, huidigBestuursorgaanInTijd, instructiveUri: instructiveTriple.predicate, options});
     return hints;
-  },
-
-  ascendDomNodesUntil(rootNode, domNode, condition){
-    if(!domNode || rootNode.isEqualNode(domNode)) return null;
-    if(!condition(domNode))
-      return this.ascendDomNodesUntil(rootNode, domNode.parentElement, condition);
-    return domNode;
-  },
-
-  domNodeMatchesRdfaInstructive(instructiveRdfa){
-    let ext = 'http://mu.semte.ch/vocabularies/ext/';
-    return (domNode) => {
-      if(!domNode.attributes || !domNode.attributes.property)
-        return false;
-      let expandedProperty = domNode.attributes.property.value.replace('ext:', ext);
-      if(instructiveRdfa.predicate == expandedProperty)
-        return true;
-      return false;
-    };
-  },
-
-  conditionDomNodeIsTypeof(uri){
-    return (domNode) => get( domNode, "attributes.typeof.value" ) == uri;
-  },
-
-  findDomNodeForContext(editor, context, condition){
-    let richNodes = context.richNodes;
-    let domNode = richNodes
-        .map(r => this.ascendDomNodesUntil(editor.rootNode, r.domNode, condition))
-        .find(d => d);
-    if(!domNode){
-      warn(`Trying to work on unattached domNode. Sorry can't handle these...`, {id: 'scoped-bestuursorgaan.domNode'});
-    }
-    return domNode;
   }
-
 });
 
 export default RdfaEditorScopedBestuursorgaanPlugin;

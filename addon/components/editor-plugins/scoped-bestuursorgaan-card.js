@@ -1,7 +1,8 @@
 import Component from '@ember/component';
 import serializeToJsonApi from '../../utils/serialize-to-json-api';
 import layout from '../../templates/components/editor-plugins/scoped-bestuursorgaan-card';
-import InsertResourceRelationCardMixin from '@lblod/ember-rdfa-editor-generic-model-plugin-utils/mixins/insert-resource-relation-card-mixin';
+import CardMixin from '@lblod/ember-rdfa-editor-generic-model-plugin-utils/mixins/card-mixin';
+
 import { inject as service } from '@ember/service';
 import { task } from 'ember-concurrency';
 
@@ -12,7 +13,7 @@ import { task } from 'ember-concurrency';
 * @class ScopedBestuursorgaanCard
 * @extends Ember.Component
 */
-export default Component.extend(InsertResourceRelationCardMixin, {
+export default Component.extend(CardMixin, {
   metaModelQuery: service(),
   currentSession: service(),
   store: service(),
@@ -43,29 +44,25 @@ export default Component.extend(InsertResourceRelationCardMixin, {
 
   }).restartable(),
 
-
-  async buildRdfa(data){
-    let bestuursorgaanJsonApi = serializeToJsonApi(await data.b);
-    let rdfa = await this.getReferRdfa(data.p, bestuursorgaanJsonApi, await data.b.get('isTijdsspecialisatieVan.naam'));
-    return rdfa;
-  },
-
   didReceiveAttrs() {
     this._super(...arguments);
-    this.get('getBestuursorganen').perform();
+    this.getBestuursorganen.perform();
   },
 
   actions: {
-    async refer(data){
-      const rdfa = await this.buildRdfa(data);
-      // TODO: we should figure out the updated position of our
-      // annotation.  then we should find the lowest node containing
-      // this slab of content and we should walk up from there to find
-      // the right dom node for us to replace the contents of.  in all
-      // other cases this code will be broken if the text node which
-      // we're given is replaced.
-      this.get('hintsRegistry').removeHintsAtLocation(this.location, this.get('hrId'), 'editor-plugins/scoped-bestuursorgaan-card');
-      this.editor.replaceNodeWithHTML(this.info.domNodeToUpdate , rdfa, true);
+    async refer({b, p}){
+      const bestuursorgaanInTijd = b;
+      const predicate = p;
+      this.hintsRegistry.removeHintsAtLocation(this.location, this.hrId, 'editor-plugins/scoped-bestuursorgaan-card');
+      const updatedLocation = this.hintsRegistry.updateLocationToCurrentIndex(this.hrId, this.location);
+      const selection = this.editor.selectContext(updatedLocation, this.info.context);
+      this.editor.update(selection, {
+        set: {
+          typeof: bestuursorgaanInTijd.rdfaBindings.class,
+          property: p.get('rdfaType'),
+          resource: bestuursorgaanInTijd.get('uri'),
+          innerHTML: `${bestuursorgaanInTijd.isTijdsspecialisatieVan.get('naam')}`
+        }});
     }
   }
 });
