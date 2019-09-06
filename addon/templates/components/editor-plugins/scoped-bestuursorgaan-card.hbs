@@ -1,37 +1,36 @@
-<div class="modal-dialog__header">
-  <div class="grid">
-    <div class="col--10-12">
-      <strong>{{info.label}}</strong>
-    </div>
-    <div class="col--2-12 u-align-right">
-      <a class="link--icon--close" href="#"> {{!-- TODO: action close {{action "remove" result.origModel}} --}}
-        <span class="u-visually-hidden">Venster sluiten</span>
-      </a>
-    </div>
-  </div>
-</div>
-<div class="modal-dialog__content modal-dialog__content--sectioned">
-  {{#if getBestuursorganen.isRunning}}
-    <p class="loader"><span class="u-visually-hidden">Aan het laden</span></p>
-  {{else}}
-    <ul class="link-list link-list--bordered">
+<Say::Hint @size="small" @type="sectioned" as |hint|>
+	<hint.header>
+    {{info.label}}
+    <p class="smaller u-spacer--top--tiny">Vindt u het juiste bestuurorgaan niet? Meld aan met de juiste bestuurseenheid.</p>
+	</hint.header>
+	{{#if getBestuursorganen.isRunning}}
+		<hint.content @padded="small">
+	    <div class="u-padding--round">
+	      <p class="loader"><span class="u-visually-hidden">Aan het laden</span></p>
+	    </div>
+		</hint.content>
+  {{else if bestuursorganenProperties.length}}
+	  <hint.list as |list|>
       {{#each bestuursorganenProperties as |bp| }}
-        <li class="link-list__item">
-          <a class="" onclick={{action 'refer' bp}}>
-            {{!-- Voeg --}}
-            {{bp.b.isTijdsspecialisatieVan.naam}}
-            (periode: {{bp.b.bindingStart}} - {{#if bp.b.bindingEinde}}{{bp.b.bindingEinde}}{{else}}nvt.{{/if}})
-            {{#if displayProperties}}
-              als {{bp.p.label}}
+	      <list.item @execute={{action "refer" bp}} @actionLabel="Kies" >
+          {{bp.b.isTijdsspecialisatieVan.naam}}
+          <p class="small text-fade uppercase">
+            {{#if bp.b.bindingEinde}}
+            	van {{moment-format bp.b.bindingStart 'DD/MM/YYYY'}} - {{moment-format bp.b.bindingEinde 'DD/MM/YYYY'}}
+            {{else}}
+            	vanaf {{moment-format bp.b.bindingStart 'DD/MM/YYYY'}}
             {{/if}}
-          </a>
-          {{!--             {{#wu-button-group}}
-          {{wu-button label="Voeg toe" size="small" isNarrow=true  commandLocation="below" onClick=(action "refer" bp)}}
-          {{wu-button label="Voeg uitgebreid toe" size="small" isNarrow=true  commandLocation="below" onClick=(action "extend" bp)}}
-          {{/wu-button-group}} --}}
-        </li>
+          </p>
+				</list.item>
       {{/each}}
-    </ul>
+		</hint.list>
+  {{else}}
+		<hint.content @padded="small">
+      <p>Geen besturen gevonden. Vernieuw deze pagina, of kijk of uw internetconnectie in orde is.</p>
+      <br>
+      <p>Moest dit probleem aanhouden, neem contact op met <a href="mailto:Gelinkt-Notuleren@vlaanderen.be">Gelinkt-Notuleren@vlaanderen.be</a>.</p>
+		</hint.content>
   {{/if}}
-</div>
+</Say::Hint>
 {{yield}}
+
