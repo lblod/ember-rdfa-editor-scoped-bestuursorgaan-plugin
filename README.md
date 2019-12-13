@@ -38,7 +38,9 @@ This will result in an automated update:
 ```
 <span typeof="besluit:Bestuurseenheid" resource="http://uri"> naam bestuurseenheid </span>
 ```
-
+Notes
+------------------------------------------------------------------------------
+Only a subset of bestuursorganen will be returned. Check the code for the exact list.
 
 Contributing
 ------------------------------------------------------------------------------

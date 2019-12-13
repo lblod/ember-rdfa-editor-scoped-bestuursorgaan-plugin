@@ -5,11 +5,14 @@ import layout from '../../templates/components/editor-plugins/scoped-bestuursorg
 import CardMixin from '@lblod/ember-rdfa-editor-generic-model-plugin-utils/mixins/card-mixin';
 import { inject as service } from '@ember/service';
 import { task } from 'ember-concurrency';
+import { reads } from '@ember/object/computed';
 
 export default Component.extend(CardMixin, {
   layout,
   currentSession: service(),
   store: service(),
+  rdfaEditorScopedBestuursorgaanPlugin: service(),
+  allowedClassifications: reads('rdfaEditorScopedBestuursorgaanPlugin.allowedBestuursorgaanClassifications'),
 
   card: 'editor-plugins/scoped-bestuursorgaan-overwrite-card',
 
@@ -21,6 +24,7 @@ export default Component.extend(CardMixin, {
       'sort': '-binding-start'
     };
     let bestuursorganenInTijd = yield this.store.query('bestuursorgaan', query);
+    bestuursorganenInTijd = bestuursorganenInTijd.filter(b => this.get('allowedClassifications').includes(b.get('isTijdsspecialisatieVan.classificatie.uri')));
     this.set('bestuursorganenInTijd', bestuursorganenInTijd);
 
   }).restartable(),

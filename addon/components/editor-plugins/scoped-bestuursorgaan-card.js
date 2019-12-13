@@ -5,6 +5,7 @@ import CardMixin from '@lblod/ember-rdfa-editor-generic-model-plugin-utils/mixin
 
 import { inject as service } from '@ember/service';
 import { task } from 'ember-concurrency';
+import { reads } from '@ember/object/computed';
 
 /**
 * Card displaying a hint of the Scoped bestuursorgaan
@@ -17,7 +18,8 @@ export default Component.extend(CardMixin, {
   metaModelQuery: service(),
   currentSession: service(),
   store: service(),
-
+  rdfaEditorScopedBestuursorgaanPlugin: service(),
+  allowedClassifications: reads('rdfaEditorScopedBestuursorgaanPlugin.allowedBestuursorgaanClassifications'),
   layout,
 
   getBestuursorganen: task(function * (){
@@ -30,10 +32,11 @@ export default Component.extend(CardMixin, {
 
     let query = {
       'filter[is-tijdsspecialisatie-van][bestuurseenheid][id]': currentBestuurseenheid.id,
-      'include':'is-tijdsspecialisatie-van,is-tijdsspecialisatie-van.bestuurseenheid',
+      'include':'is-tijdsspecialisatie-van,is-tijdsspecialisatie-van.bestuurseenheid,is-tijdsspecialisatie-van.classificatie',
       'sort': '-binding-start'
     };
     let bestuursorganenInTijd = yield this.store.query('bestuursorgaan', query);
+    bestuursorganenInTijd = bestuursorganenInTijd.filter(b => this.get('allowedClassifications').includes(b.get('isTijdsspecialisatieVan.classificatie.uri')));
     let bestuursorganenProperties = [];
     bestuursorganenInTijd.forEach(b => {
       properties.forEach(p => {
