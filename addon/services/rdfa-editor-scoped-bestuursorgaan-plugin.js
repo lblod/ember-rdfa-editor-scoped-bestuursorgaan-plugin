@@ -15,6 +15,7 @@ import { inject as service } from '@ember/service';
  * @extends EmberService
  */
 const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
+  editorApi: "1.0",
   overwriteScopedOrgaan: 'http://data.vlaanderen.be/ns/besluit#Bestuursorgaan',
   insertScopedOrgaan: 'http://mu.semte.ch/vocabularies/ext/scopedBestuursorgaanText',
   insertStandAloneBestuurseenheid: 'http://mu.semte.ch/vocabularies/ext/setStandAloneCurrentBestuurseenheid',
@@ -66,10 +67,6 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
    *
    *  POTENTIAL ISSUES/TODO
    *  ---------------------
-   *  -  Replacing domNodes not attached to the tree anymore (problem for a. and c.)
-   *     TODO: a robust handling and decent fallback if dead node is found.
-   *           This is potentially (as a POC) mitigated in flow b.
-   *
    *  - Instructives could pollute RDFA content. e.g. <span property="aRealProperty:foo"><property="ext:instructive"> test </span></span>
    *    The resource will result in {subject, predicate: "aRealProperty:foo", object: "test"}
    *     TODO: implement more expressive instructives wich DO NOT set aRealProperty
@@ -86,32 +83,25 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
    * ---------------------------------------------------
    * @method execute
    *
-   * @param {string} hrId Unique identifier of the event in the hintsRegistry
-   * @param {Array} contexts RDFa contexts of the text snippets the event applies on
+   * @param {Array} rdfaBlocks RDFa contexts of the text snippets the event applies on
    * @param {Object} hintsRegistry Registry of hints in the editor
    * @param {Object} editor The RDFa editor instance
    *
    * @public
    */
-  execute: task(function * (hrId, contexts, hintsRegistry, editor) {
-    if (contexts.length === 0) return [];
-    let cardName;
+  execute: task(function * (rdfaBlocks, hintsRegistry, editor) {
+    if (rdfaBlocks.length === 0) return [];
+    hintsRegistry.removeHints({ rdfaBlocks, scope: this.scopedOrgaan});
+    hintsRegistry.removeHints({ rdfaBlocks, scope: this.overwriteCard});
 
     let bestuurseenheid = yield this.currentSession.get('group');
-
-    contexts.forEach( (context) => {
-      // clear previous hints
-      hintsRegistry.removeHintsInRegion(context.region, hrId, this.scopedOrgaan);
-      hintsRegistry.removeHintsInRegion(context.region, hrId, this.overwriteCard);
-    });
-
-    for (let context of contexts) {
+    for (let block of rdfaBlocks) {
       // add new hints
-      const triple = this.detectRelevantContext(context);
+      const triple = this.detectRelevantContext(block);
       if (triple) {
         const selectContext = { property: triple.predicate };
         if(triple.predicate === this.insertStandAloneBestuurseenheid){
-          const selection = editor.selectContext(context.region, selectContext);
+          const selection = editor.selectContext(block.region, selectContext);
           editor.update(selection, {
             remove: { property: this.insertStandAloneBestuurseenheid},
             set: {
@@ -121,24 +111,31 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
             }
           });
         }
-        else if(triple.predicate === this.insertScopedOrgaan){
-          cardName = this.scopedOrgaan;
-          hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
-          let newCards =
-              this
-              .generateHintsForContext(context, triple, selectContext)
-              .map( (hint) => this.generateCard( hrId, hintsRegistry, editor, hint, cardName ) );
-          hintsRegistry.addHints(hrId, cardName, newCards);
-        }
-        else if(triple.object === this.overwriteScopedOrgaan){
-          // the overwriteScopedOrgaan context is always wrapped by insertScopedOrgaan context.
-          cardName = this.overwriteCard;
-          hintsRegistry.removeHintsInRegion(context.region, hrId, cardName);
-          let newCards =
-              this
-              .generateHintsForContext(context, triple, selectContext, { noHighlight: true })
-              .map( (hint) => this.generateCard( hrId, hintsRegistry, editor, hint, cardName ) );
-          hintsRegistry.addHints(hrId, cardName, newCards);
+        else {
+          let cardName;
+          let options = {};
+          if (triple.predicate === this.insertScopedOrgaan) {
+            cardName = this.insertScopedOrgaan;
+          }
+            else {
+              cardName = this.overwriteCard;
+              options = { noHighlight: true };
+          }
+          hintsRegistry.addHint(cardName, {
+            info: {
+              label: 'Voeg het relevante bestuursorgaan toe.',
+              plainValue: block.text ? block.text : "",
+              location: block.region,
+              domainUri: this.findTypeForInstructive(block, triple),
+              context: selectContext,
+              instructiveUri: triple.predicate,
+              huidigBestuursorgaanInTijd: triple.subject,
+              hintsRegistry, editor
+            },
+            location: block.region,
+            options: options,
+            card: cardName
+          });
         }
       }
     }
@@ -180,60 +177,6 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
    */
   findTypeForInstructive(context, instructiveTriple){
     return (context.context.find(t => t.subject == instructiveTriple.subject && t.predicate == 'a') || {}).object;
-  },
-
-  /**
-   * Generates a card given a hint
-   *
-   * @method generateCard
-   *
-   * @param {string} hrId Unique identifier of the event in the hintsRegistry
-   * @param {Object} hintsRegistry Registry of hints in the editor
-   * @param {Object} editor The RDFa editor instance
-   * @param {Object} hint containing the hinted string and the location of this string
-   *
-   * @return {Object} The card to hint for a given template
-   *
-   * @private
-   */
-  generateCard(hrId, hintsRegistry, editor, hint, cardName, label = 'Voeg het relevante bestuursorgaan toe.' ){
-    return EmberObject.create({
-      info: {
-        label: label,
-        plainValue: hint.text,
-        location: hint.location,
-        domainUri: hint.domainUri,
-        context: hint.selectContext,
-        instructiveUri: hint.instructiveUri,
-        huidigBestuursorgaanInTijd: hint.huidigBestuursorgaanInTijd,
-        hrId, hintsRegistry, editor
-      },
-      location: hint.location,
-      options: hint.options,
-      card: cardName
-    });
-  },
-
-  /**
-   * Generates a hint, given a context
-   *
-   * @method generateHintsForContext
-   *
-   * @param {Object} context Text snippet at a specific location with an RDFa context
-   *
-   * @return {Object} [{dateString, location}]
-   *
-   * @private
-   */
-  generateHintsForContext(context, instructiveTriple, selectContext, options = {}){
-    const domainUri = this.findTypeForInstructive(context, instructiveTriple);
-    const hints = [];
-    const text = context.text ?  context.text : "";
-    const location = context.region;
-    const huidigBestuursorgaanInTijd = instructiveTriple.subject;
-    hints.push({text, location, domainUri, selectContext, huidigBestuursorgaanInTijd, instructiveUri: instructiveTriple.predicate, options});
-    return hints;
   }
 });
-
 export default RdfaEditorScopedBestuursorgaanPlugin;

@@ -36,9 +36,8 @@ export default Component.extend(CardMixin, {
   actions: {
     async refer(bestuursorgaanInTijd){
       if (bestuursorgaanInTijd.uri !== this.info.huidigBestuursorgaanInTijd) {
-        this.hintsRegistry.removeHintsAtLocation(this.location, this.get('hrId'), 'editor-plugins/scoped-bestuursorgaan-card');
-        const updatedLocation = this.hintsRegistry.updateLocationToCurrentIndex(this.hrId, this.location);
-        const selection = this.editor.selectContext(updatedLocation, this.info.context);
+        this.hintsRegistry.removeHints(this.location, 'editor-plugins/scoped-bestuursorgaan-card');
+        const selection = this.editor.selectContext(this.location, this.info.context);
         this.editor.update(selection, {
           set: {
             typeof: bestuursorgaanInTijd.rdfaBindings.class,
