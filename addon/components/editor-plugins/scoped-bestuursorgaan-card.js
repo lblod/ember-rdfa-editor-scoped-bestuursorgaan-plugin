@@ -56,7 +56,7 @@ export default Component.extend(CardMixin, {
     async refer({b, p}){
       const bestuursorgaanInTijd = b;
       const predicate = p;
-      this.hintsRegistry.removeHints(this.location, 'editor-plugins/scoped-bestuursorgaan-card');
+      this.hintsRegistry.removeHints({region: this.location, scope: 'editor-plugins/scoped-bestuursorgaan-card'});
       const selection = this.editor.selectContext(this.location, this.info.context);
       this.editor.update(selection, {
         set: {

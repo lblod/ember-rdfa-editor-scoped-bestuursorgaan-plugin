@@ -115,7 +115,7 @@ const RdfaEditorScopedBestuursorgaanPlugin = Service.extend({
           let cardName;
           let options = {};
           if (triple.predicate === this.insertScopedOrgaan) {
-            cardName = this.insertScopedOrgaan;
+            cardName = this.scopedOrgaan;
           }
             else {
               cardName = this.overwriteCard;
